@@ -69,11 +69,11 @@ const Login = () => {
       const status = err.response?.status;
       const serverMsg = err.response?.data?.error;
       if (!err.response) {
-        setError('Cannot reach the server. Please make sure the backend is running on port 5000.');
+        setError('Cannot reach the server. Please check that the backend is online.');
       } else if (serverMsg) {
         setError(serverMsg);
       } else {
-        setError(`Demo ${role} login failed (${status ?? 'network error'}). Please try again.`);
+        setError(`Demo ${role} login failed (HTTP ${status ?? 'network error'}). Please try again.`);
       }
     }
   };
