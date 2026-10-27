@@ -14,7 +14,9 @@ import {
   Sparkles,
   PlusCircle,
   Globe,
-  BarChart3
+  BarChart3,
+  ScanEye,
+  FileType
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -32,6 +34,9 @@ const Sidebar = () => {
     { label: 'My Submissions', to: '/creator/submissions', icon: FileText },
     { label: 'Brand Guidelines', to: '/creator/guidelines', icon: BookOpen },
     { label: 'Published Content', to: '/published-content', icon: Globe },
+    { label: 'Visual Compliance', to: '/visual-compliance', icon: ScanEye },
+    { label: 'Document Review', to: '/document-review', icon: FileType },
+    { label: 'Intelligence', to: '/intelligence', icon: Sparkles },
     { label: 'Governance Analytics', to: '/analytics', icon: BarChart3 },
   ];
 
@@ -42,6 +47,9 @@ const Sidebar = () => {
     { label: 'Approval Queue', to: '/manager/approvals', icon: CheckSquare },
     { label: 'All Submissions', to: '/creator/submissions', icon: FileCheck2 },
     { label: 'Published Content', to: '/published-content', icon: Globe },
+    { label: 'Visual Compliance', to: '/visual-compliance', icon: ScanEye },
+    { label: 'Document Review', to: '/document-review', icon: FileType },
+    { label: 'Intelligence', to: '/intelligence', icon: Sparkles },
     { label: 'Governance Analytics', to: '/analytics', icon: BarChart3 },
   ];
 

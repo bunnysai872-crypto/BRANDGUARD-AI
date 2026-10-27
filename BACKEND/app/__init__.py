@@ -68,13 +68,15 @@ def create_app(config_name=None):
         return jsonify({"success": False, "error": "Internal server error."}), 500
 
     # Register Blueprints
-    from app.routes import auth_bp, health_bp, brands_bp, guidelines_bp, submissions_bp, analytics_bp
+    from app.routes import auth_bp, health_bp, brands_bp, guidelines_bp, submissions_bp, analytics_bp, visual_compliance_bp, document_review_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(brands_bp)
     app.register_blueprint(guidelines_bp)
     app.register_blueprint(submissions_bp)
     app.register_blueprint(analytics_bp)
+    app.register_blueprint(visual_compliance_bp)
+    app.register_blueprint(document_review_bp)
 
     # Safe table creation & non-destructive migration for SQLite / DB
     with app.app_context():
@@ -110,6 +112,15 @@ def create_app(config_name=None):
                 ca_cols = {c["name"] for c in inspector.get_columns("compliance_analyses")}
                 if "critical_severity_count" not in ca_cols:
                     db.session.execute(text("ALTER TABLE compliance_analyses ADD COLUMN critical_severity_count INTEGER DEFAULT 0"))
+
+            if "visual_compliance_analyses" in inspector.get_table_names():
+                vca_cols = {c["name"] for c in inspector.get_columns("visual_compliance_analyses")}
+                if "compliance_score" not in vca_cols:
+                    db.session.execute(text("ALTER TABLE visual_compliance_analyses ADD COLUMN compliance_score INTEGER"))
+                if "unable_to_verify_count" not in vca_cols:
+                    db.session.execute(text("ALTER TABLE visual_compliance_analyses ADD COLUMN unable_to_verify_count INTEGER DEFAULT 0"))
+                if "has_limitations" not in vca_cols:
+                    db.session.execute(text("ALTER TABLE visual_compliance_analyses ADD COLUMN has_limitations BOOLEAN DEFAULT 0"))
 
             db.session.commit()
         except Exception as e:

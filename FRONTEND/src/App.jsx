@@ -13,6 +13,9 @@ import SubmissionDetails from './pages/SubmissionDetails';
 import ApprovalQueue from './pages/ApprovalQueue';
 import PublishedContent from './pages/PublishedContent';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import VisualComplianceChecker from './pages/VisualComplianceChecker';
+import DocumentReview from './pages/DocumentReview';
+import IntelligenceDashboard from './pages/IntelligenceDashboard';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -126,6 +129,30 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={['creator', 'admin']}>
             <AnalyticsDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/visual-compliance"
+        element={
+          <ProtectedRoute allowedRoles={['creator', 'admin']}>
+            <VisualComplianceChecker />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/document-review"
+        element={
+          <ProtectedRoute allowedRoles={['creator', 'admin']}>
+            <DocumentReview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intelligence"
+        element={
+          <ProtectedRoute allowedRoles={['creator', 'admin']}>
+            <IntelligenceDashboard />
           </ProtectedRoute>
         }
       />

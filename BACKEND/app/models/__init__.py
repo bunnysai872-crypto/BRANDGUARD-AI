@@ -8,6 +8,8 @@ from app.models.guideline import BrandGuideline, GUIDELINE_CATEGORIES, GUIDELINE
 from app.models.submission import ContentSubmission, ContentRevision, SUBMISSION_STATUSES
 from app.models.compliance import ComplianceAnalysis, ComplianceFinding
 from app.models.decision import ReviewDecision, DECISION_CHOICES
+from app.models.visual_compliance import VisualComplianceAnalysis, VisualComplianceFinding
+from app.models.document_review import DocumentReview, DocumentReviewFinding
 
 __all__ = [
     "db",
@@ -23,5 +25,9 @@ __all__ = [
     "ComplianceAnalysis",
     "ComplianceFinding",
     "ReviewDecision",
-    "DECISION_CHOICES"
+    "DECISION_CHOICES",
+    "VisualComplianceAnalysis",
+    "VisualComplianceFinding",
+    "DocumentReview",
+    "DocumentReviewFinding"
 ]

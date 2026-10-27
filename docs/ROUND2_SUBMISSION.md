@@ -3,9 +3,9 @@
 **Project Title**: BrandGuard AI – Intelligent Brand Governance & Content Compliance Platform  
 **Competition**: Inkloom AI Hackathon Round 2 (The Build)  
 **Submission Deadline**: October 25, 2026 – 10:00 AM IST  
-**Repository**: [GitHub Repository Placeholder: https://github.com/your-username/brandguard-ai]  
-**Live Deployed Application**: [Production Web App: https://brandguard-ai.vercel.app]  
-**Backend API & Health**: [Production API: https://brandguard-api.onrender.com/api/health]  
+**Repository**: [https://github.com/bunnysai872-crypto/BRANDGUARD-AI](https://github.com/bunnysai872-crypto/BRANDGUARD-AI)  
+**Live Demo**: [https://brandguard-ai-tau.vercel.app/login](https://brandguard-ai-tau.vercel.app/login)  
+**Backend API & Health**: [https://brandguard-ai-fdfl.onrender.com/api/health](https://brandguard-ai-fdfl.onrender.com/api/health)  
 
 ---
 
@@ -47,10 +47,10 @@ Organizations urgently require an **automated, evidence-linked compliance verifi
 - **Content Drafting & Revision History**: Creators draft copy with live word/char counters. Every edit snapshots an immutable record into `ContentRevision` with timestamp and changelog reason.
 
 ### Phase 3 — Gemini AI Compliance Checking Engine
-- **Official Google GenAI SDK Integration**: Utilizes `google-genai` with model `gemini-2.5-flash`.
-- **Structured Schema & Evidence Linking**: Returns JSON findings including flagged excerpt, severity (*High*, *Medium*, *Low*), violated guideline ID, reasoning, and suggested replacement copy.
+- **Official Google GenAI SDK Integration**: Utilizes `google-genai` with model `gemini-2.5-flash`, JSON output mode (`response_mime_type="application/json"`), and temperature 0.1 for deterministic structured output.
+- **Structured Schema & Evidence Linking**: Returns JSON findings including flagged excerpt, severity (*Critical*, *High*, *Medium*, *Low*), violated guideline ID (DB-validated), explanation, confidence level, human-verification flag, and suggested replacement copy.
 - **Hallucinated Guideline Sanitization**: Validates all AI-returned rule IDs against the brand's database IDs, sanitizing fabricated citations.
-- **Stale Report Invalidation**: Detects when copy has been revised after an audit and prompts re-analysis.
+- **Stale Report Invalidation**: Detects when copy has been revised after an audit and blocks submission until re-analysis.
 
 ### Phase 4 — Manager Review Queue & Decision Governance
 - **Creator Approval Submission**: Escalates compliant copy to manager queue with mandatory High-Severity Warning Acknowledgement modal.
@@ -60,12 +60,15 @@ Organizations urgently require an **automated, evidence-linked compliance verifi
 - **Auto-Reset Workflow**: Revising a `Changes Requested` submission auto-resets status to `Draft` and marks reports outdated for re-audit.
 - **Immutable Decision History**: Full chronological timeline of review decisions logged in `ReviewDecision`.
 
-### Phase 5 — Production Readiness & Deployment Preparation
+### Phase 5 — Publishing, Analytics & Production Readiness
+- **In-App Publishing Workflow**: Brand Managers publish `Approved` content via `POST /api/submissions/:id/publish`; sets `published_at`, `published_by_id`; permanently locks the submission against further edits.
+- **Governance Analytics Dashboard**: Real-time DB-computed metrics: submission counts by status, severity distribution, violation category distribution, common flagged phrases, reviewer outcome ratios, and submission timeline trends.
 - **PostgreSQL Connection Pooling**: Configured SQLAlchemy with auto-reconnection and connection recycling for hosted PostgreSQL.
-- **Production Security**: Strict CORS headers, environment secret validation, safe logging, and hardened health check endpoint (`/api/health`).
-- **Gunicorn WSGI**: Production-grade WSGI configuration with worker threads and timeouts.
-- **Vercel SPA Rewrites**: Configured `vercel.json` for client-side routing.
-- **Automated Seeding**: Idempotent `seed_demo.py` script for instant evaluator testing.
+- **Production Security**: Strict CORS headers, environment secret validation, safe logging, hardened health check (`/api/health`).
+- **Gunicorn WSGI**: Production-grade WSGI with multi-worker configuration.
+- **Vercel API Proxy**: `vercel.json` configured with `/api/:path*` → Render proxy rewrite before the SPA catch-all, eliminating 405 errors on POST requests.
+- **Idempotent Demo Login**: `/api/auth/demo-login` endpoint auto-creates demo accounts and issues JWT — one-click evaluator access without manual seeding.
+- **Automated Seeding**: `seed_demo.py` creates the CloudNova brand, 6 guidelines, and pre-loaded submissions.
 
 ---
 
@@ -76,12 +79,12 @@ Organizations urgently require an **automated, evidence-linked compliance verifi
 | **Frontend** | Single Page Application | React 18, Vite 5, Tailwind CSS, Lucide React, Axios |
 | **Frontend Routing** | Client-side Router | React Router DOM 6 with role-based `ProtectedRoute` wrappers |
 | **Backend** | REST API Server | Python 3.12, Flask 3.0 Application Factory |
-| **WSGI Server** | Production Web Server | Gunicorn 21.2 (`run:app` with 2 workers, 4 threads) |
+| **WSGI Server** | Production Web Server | Gunicorn 21.2 (multi-worker, multi-thread) |
 | **Database ORM** | Object-Relational Mapper | Flask-SQLAlchemy 3.1, declarative relational schemas |
-| **Databases** | Relational Storage | SQLite (Local Dev) / PostgreSQL (Production Hosted) |
+| **Databases** | Relational Storage | SQLite (Local Dev) / PostgreSQL (Production – Render) |
 | **Authentication** | Token-based Auth | Flask-JWT-Extended 4.6 (HMAC-SHA256, 7-day TTL) |
-| **AI Integration** | GenAI Python SDK | `google-genai>=1.0.0`, Gemini 2.5 Flash |
-| **Document Engine** | PDF Generation | ReportLab 5.1 |
+| **AI Integration** | GenAI Python SDK | `google-genai>=1.0.0`, Gemini 2.5 Flash, JSON output mode |
+| **PDF Parsing** | Text Extraction | `pypdf>=4.0.0` (embedded-text PDFs; not OCR-capable) |
 | **Testing** | Automated Test Runner | Pytest 9.1 with in-memory SQLite fixtures |
 
 ---
@@ -126,12 +129,14 @@ Organizations urgently require an **automated, evidence-linked compliance verifi
 
 In Round 1, BrandGuard AI was conceived as a conceptual architecture with preliminary design tokens. In Round 2 (The Build), the platform was implemented into an enterprise-grade full-stack system:
 
-1. **Complete Database-Backed Persistence**: Replaced conceptual mockups with a relational SQLAlchemy schema supporting Users, Brands, Brand Memberships, Guidelines, Submissions, Revision Snapshots, Compliance Analyses, Findings, and Review Decisions.
-2. **Official Google GenAI SDK Migration**: Integrated the modern `google-genai` SDK using `gemini-3.8-flash` with JSON output formatting, severity counters, and citation sanitization.
-3. **Immutable Revision History**: Built a changelog snapshot engine where every edit creates an unalterable revision with word counts, diff tracking, and previous version previews.
+1. **Complete Database-Backed Persistence**: Replaced conceptual mockups with a relational SQLAlchemy schema (10 tables) supporting Users, Brands, Brand Memberships, Guidelines, Submissions, Revision Snapshots, Compliance Analyses, Findings, and Review Decisions.
+2. **Official Google GenAI SDK Migration**: Integrated the modern `google-genai` SDK using `gemini-2.5-flash` with JSON output mode, severity counters, confidence levels, and citation sanitization.
+3. **Immutable Revision History**: Built a changelog snapshot engine where every edit creates an unalterable revision with reason, word count, and timestamp.
 4. **Stale-Report Protection System**: Implemented automated detection that prevents approving or escalating submissions whose content changed after the latest AI analysis.
 5. **Bidirectional Review Lifecycle**: Built the Manager Approval Queue, Exception Acknowledgement modals, and immutable decision history timeline.
-6. **Production Infrastructure**: Built deployment configurations for Render (Gunicorn), Vercel (SPA rewrites), and hosted PostgreSQL.
+6. **Publishing Workflow**: Implemented `POST /api/submissions/:id/publish`; only Brand Managers can publish Approved content; `published_at` and `published_by_id` are persisted.
+7. **Governance Analytics**: Real-time DB-computed analytics dashboard (submission metrics, severity distribution, common issues, timeline trends).
+8. **Production Deployment**: Deployed frontend to Vercel (https://brandguard-ai-tau.vercel.app) and backend to Render (https://brandguard-ai-fdfl.onrender.com). Fixed 405 errors via Vercel API proxy rewrite.
 
 ---
 
@@ -141,9 +146,8 @@ All 39 automated integration and unit tests pass:
 
 ```text
 ============================= test session starts =============================
-platform win32 -- Python 3.12.9, pytest-9.1.1, pluggy-1.7.0 -- C:\Documents\BRAND GUARD\BACKEND\venv\Scripts\python.exe
+platform win32 -- Python 3.12.9, pytest-9.1.1, pluggy-1.7.0
 rootdir: C:\Documents\BRAND GUARD\BACKEND
-plugins: anyio-4.15.1
 collected 39 items
 
 tests/test_auth.py (11 tests)                    PASSED  [ 28%]
@@ -157,14 +161,13 @@ tests/test_publishing.py (6 tests)                PASSED [ 100%]
 ============================= 39 passed in 21.72s =============================
 ```
 
-Frontend production build (`npm run build`) succeeds cleanly with zero bundle errors:
+Frontend production build (`npm run build`) succeeds cleanly with zero errors:
 ```text
 vite v5.4.21 building for production...
-✓ 1640 modules transformed.
-dist/index.html                   1.22 kB │ gzip:  0.72 kB
-dist/assets/index-BTEBlcmv.css   30.99 kB │ gzip:  5.86 kB
-dist/assets/index-BcfyneGU.js   366.87 kB │ gzip: 99.14 kB
-✓ built in 5.23s
+1642 modules transformed.
+dist/assets/index-*.css   35.59 kB | gzip: 6.46 kB
+dist/assets/index-*.js   411.99 kB | gzip: 106.81 kB
+built in 5.94s — 0 errors, 0 warnings
 ```
 
 ---
@@ -190,27 +193,28 @@ Building upon Round 2, the following three major enterprise capabilities are sch
 
 ## 9. Deployment URLs
 
-| Service | Environment | Status / URL |
+| Service | Environment | URL |
 | :--- | :--- | :--- |
-| **Frontend Application** | Production (Vercel) | `https://brandguard-ai.vercel.app` *(Placeholder pending deployment)* |
-| **Backend REST API** | Production (Render) | `https://brandguard-api.onrender.com` *(Placeholder pending deployment)* |
-| **API Health Check** | Production | `https://brandguard-api.onrender.com/api/health` |
-| **Local Development** | Localhost | Frontend: `http://localhost:5173` • Backend: `http://localhost:5000` |
+| **Frontend Application** | Production (Vercel) | https://brandguard-ai-tau.vercel.app |
+| **Login Page** | Production | https://brandguard-ai-tau.vercel.app/login |
+| **Backend REST API** | Production (Render) | https://brandguard-ai-fdfl.onrender.com |
+| **API Health Check** | Production | https://brandguard-ai-fdfl.onrender.com/api/health |
+| **Local Development** | Localhost | Frontend: `http://localhost:5173` · Backend: `http://localhost:5000` |
 
 ---
 
 ## 10. Source Code & Repository Structure
 
-- **Repository**: `https://github.com/your-username/brandguard-ai` *(Placeholder pending push)*
+- **Repository**: https://github.com/bunnysai872-crypto/BRANDGUARD-AI
 - **Structure**:
-  - `BACKEND/`: Flask application, models, routes, services, pytest test suites, `seed_demo.py`.
-  - `FRONTEND/`: React 18, Vite, Tailwind CSS, components, pages, context, `vercel.json`.
-  - `docs/`: Technical specifications, `DEPLOYMENT_GUIDE.md`, `ROUND2_SUBMISSION.md`, `ROUND2_SUBMISSION.pdf`.
+  - `BACKEND/`: Flask application, models, routes, services, pytest test suites, `seed_demo.py`, `generate_pdf_report.py`.
+  - `FRONTEND/`: React 18, Vite, Tailwind CSS, components, pages, context, `vercel.json` (with API proxy).
+  - `docs/`: `ROUND2_SUBMISSION.md`, `ROUND2_SUBMISSION.pdf`, `ROUND2_PROJECT_REPORT.md`, `ROUND2_DEMO_GUIDE.md`, `ROUND2_TEST_REPORT.md`, `ROUND3_ROADMAP.md`, `DEPLOYMENT_GUIDE.md`.
 
 ---
 
 ## 11. Third-Party Dependencies & AI Assistance Disclosure
 
-- **AI SDK**: Official `google-genai` Python SDK (Apache 2.0 License).
-- **Core Libraries**: Flask, Flask-SQLAlchemy, Flask-JWT-Extended, Flask-CORS, Werkzeug, psycopg2-binary, Gunicorn, React, Vite, Tailwind CSS, Lucide React, Axios, ReportLab.
+- **AI SDK**: Official `google-genai` Python SDK (Apache 2.0 License). No API keys committed to repository.
+- **Core Libraries**: Flask, Flask-SQLAlchemy, Flask-JWT-Extended, Flask-CORS, Werkzeug, python-dotenv, psycopg2-binary, psycopg[binary], pypdf, Gunicorn, React, Vite, Tailwind CSS, Lucide React, Axios, ReportLab.
 - **AI Coding Assistance**: Google Antigravity IDE (Gemini 2.5) was utilized as an agentic pair-programmer for architectural design, code refactoring, automated test generation, and documentation drafting. All code was audited and validated against automated pytest suites and production build tools.
