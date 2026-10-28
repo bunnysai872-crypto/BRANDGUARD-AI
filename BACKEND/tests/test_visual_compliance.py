@@ -158,6 +158,97 @@ class TestVisualComplianceUnauthenticated:
         assert res.status_code == 401
 
 
+
+class TestVisualComplianceMultipartBoundaryRegression:
+    """
+    Regression tests for the production bug where the frontend sent
+    'Content-Type: multipart/form-data' WITHOUT the boundary parameter,
+    causing Flask/Werkzeug to fail to parse form fields.  When form fields
+    are unparseable, Flask-JWT-Extended cannot find the JWT (it only looks
+    in headers, not the body — but Werkzeug still fails to parse the whole
+    request), and returns 401, triggering the auto-logout redirect to /login.
+
+    Root cause: VisualComplianceChecker.jsx passed
+        headers: { 'Content-Type': 'multipart/form-data' }
+    to api.post(), which stripped the auto-generated boundary from the header.
+
+    Fix: remove the explicit Content-Type override so Axios sets the full
+        'multipart/form-data; boundary=...' header automatically.
+    """
+
+    def _setup(self, client):
+        mgr_h, mgr_id = _register(client, "vc_mgr_reg", "vc_mgr_reg@b.com", "Pwd123!", "admin")
+        brand_id = _create_brand(client, mgr_h, "RegressionBrand",
+                                 tone_style="Professional")
+        _create_guideline(client, mgr_h, brand_id)
+        return mgr_h, brand_id
+
+    def test_authenticated_multipart_with_correct_boundary_succeeds(self, client):
+        """
+        Core regression: an authenticated multipart POST where the test client
+        automatically sets Content-Type including the boundary must NOT return 401.
+        This mirrors Axios sending FormData without a manual Content-Type override.
+        """
+        mgr_h, brand_id = self._setup(client)
+
+        with patch(
+            "app.services.visual_compliance_service.VisualComplianceService._get_gemini_client",
+            return_value=(_mock_gemini_success(), None),
+        ):
+            res = client.post(
+                "/api/visual-compliance/analyze",
+                data={"image": _png_file(), "brand_id": str(brand_id)},
+                headers=mgr_h,
+                content_type="multipart/form-data",
+            )
+
+        assert res.status_code != 401, (
+            "Got 401 on an authenticated multipart request — this is the login-redirect bug. "
+            "The Authorization header or form body parsing is broken."
+        )
+        assert res.status_code == 201
+        assert res.get_json()["success"] is True
+
+    def test_multipart_request_missing_jwt_returns_401_for_correct_reason(self, client):
+        """
+        A multipart request with NO Authorization header must return 401
+        for the correct reason (missing JWT), not because of a body parse failure.
+        """
+        mgr_h, brand_id = self._setup(client)
+
+        res = client.post(
+            "/api/visual-compliance/analyze",
+            data={"image": _png_file(), "brand_id": str(brand_id)},
+            # Deliberately omit Authorization header
+            content_type="multipart/form-data",
+        )
+        assert res.status_code == 401
+        body = res.get_json()
+        assert body is not None
+        error_text = body.get("error", "").lower()
+        # Must be a JWT error message, not a body-parse error
+        assert "token" in error_text or "authorization" in error_text
+
+    def test_multipart_with_empty_form_returns_4xx_not_401(self, client):
+        """
+        A POST with an authenticated header but no form fields must return
+        400 (brand_id missing) or 422 (image missing), never 401.
+        A 401 here would mean form-parse failure is wrongly treated as auth failure.
+        """
+        mgr_h, brand_id = self._setup(client)
+
+        res = client.post(
+            "/api/visual-compliance/analyze",
+            data={},
+            headers=mgr_h,
+            content_type="multipart/form-data",
+        )
+        assert res.status_code in (400, 422), (
+            f"Expected 400/422 for empty form, got {res.status_code}. "
+            "A 401 here means JWT is incorrectly invalidated by a body-parse failure."
+        )
+
+
 class TestVisualComplianceFileValidation:
     """File type, extension, and size validation tests."""
 

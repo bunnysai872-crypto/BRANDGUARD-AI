@@ -385,9 +385,7 @@ const VisualComplianceChecker = () => {
     formData.append('image', imageFile);
 
     try {
-      const res = await api.post('/visual-compliance/analyze', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const res = await api.post('/visual-compliance/analyze', formData);
       if (res.data.success) {
         setAnalysis(res.data.analysis);
         fetchHistory(); // refresh history list
