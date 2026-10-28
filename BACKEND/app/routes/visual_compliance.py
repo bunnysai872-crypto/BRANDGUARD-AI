@@ -31,7 +31,7 @@ def analyze_image():
     role = claims.get("role", "creator")
 
     # ── 1. Validate brand_id ─────────────────────────────────────────────────
-    brand_id_raw = request.form.get("brand_id")
+    brand_id_raw = request.form.get("brand_id") or request.values.get("brand_id")
     if not brand_id_raw:
         return jsonify({"success": False, "error": "brand_id is required."}), 400
     try:

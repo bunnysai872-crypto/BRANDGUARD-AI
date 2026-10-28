@@ -11,17 +11,26 @@ if (resolvedBaseUrl.startsWith('http') && !resolvedBaseUrl.endsWith('/api') && !
 
 const api = axios.create({
   baseURL: resolvedBaseUrl,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
-// Request interceptor to attach JWT token
+// Request interceptor to attach JWT token and handle FormData Content-Type
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('brandguard_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // When sending FormData, remove Content-Type so Axios and the browser
+    // automatically generate the multipart/form-data boundary delimiter.
+    if (
+      config.data instanceof FormData ||
+      (config.data && Object.prototype.toString.call(config.data) === '[object FormData]')
+    ) {
+      delete config.headers['Content-Type'];
+      delete config.headers['content-type'];
+      if (typeof config.headers.setContentType === 'function') {
+        config.headers.setContentType(false);
+      }
     }
     return config;
   },

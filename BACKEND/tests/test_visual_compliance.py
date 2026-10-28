@@ -249,6 +249,113 @@ class TestVisualComplianceMultipartBoundaryRegression:
         )
 
 
+class TestVisualComplianceBrandIdValidation:
+    """
+    Regression tests verifying proper validation of brand_id in multipart requests:
+    - Missing brand_id returns 400 with 'brand_id is required.'
+    - Empty brand_id returns 400 with 'brand_id is required.'
+    - Non-integer brand_id (e.g. brand name string) returns 400 with 'brand_id must be a valid integer.'
+    - Valid selected brand_id (as string or int) succeeds with 201.
+    - Valid selected brand_id passed via values/query param also succeeds with 201.
+    """
+
+    def _setup(self, client):
+        mgr_h, mgr_id = _register(client, "vc_mgr_bid", "vc_mgr_bid@b.com", "Pwd123!", "admin")
+        brand_id = _create_brand(client, mgr_h, "BrandIdTestBrand", tone_style="Professional")
+        _create_guideline(client, mgr_h, brand_id)
+        return mgr_h, brand_id
+
+    def test_missing_brand_id_returns_400(self, client):
+        mgr_h, brand_id = self._setup(client)
+        res = client.post(
+            "/api/visual-compliance/analyze",
+            data={"image": _png_file()},
+            headers=mgr_h,
+            content_type="multipart/form-data",
+        )
+        assert res.status_code == 400
+        body = res.get_json()
+        assert body["success"] is False
+        assert body["error"] == "brand_id is required."
+
+    def test_empty_brand_id_returns_400(self, client):
+        mgr_h, brand_id = self._setup(client)
+        res = client.post(
+            "/api/visual-compliance/analyze",
+            data={"image": _png_file(), "brand_id": ""},
+            headers=mgr_h,
+            content_type="multipart/form-data",
+        )
+        assert res.status_code == 400
+        body = res.get_json()
+        assert body["success"] is False
+        assert body["error"] == "brand_id is required."
+
+    def test_non_integer_brand_name_as_brand_id_returns_400(self, client):
+        mgr_h, brand_id = self._setup(client)
+        res = client.post(
+            "/api/visual-compliance/analyze",
+            data={"image": _png_file(), "brand_id": "CloudNova"},
+            headers=mgr_h,
+            content_type="multipart/form-data",
+        )
+        assert res.status_code == 400
+        body = res.get_json()
+        assert body["success"] is False
+        assert body["error"] == "brand_id must be a valid integer."
+
+    def test_valid_selected_brand_id_string_succeeds(self, client):
+        mgr_h, brand_id = self._setup(client)
+        with patch(
+            "app.services.visual_compliance_service.VisualComplianceService._get_gemini_client",
+            return_value=(_mock_gemini_success(), None),
+        ):
+            res = client.post(
+                "/api/visual-compliance/analyze",
+                data={"image": _png_file(), "brand_id": str(brand_id)},
+                headers=mgr_h,
+                content_type="multipart/form-data",
+            )
+        assert res.status_code == 201
+        body = res.get_json()
+        assert body["success"] is True
+        assert body["analysis"]["brand_id"] == brand_id
+
+    def test_valid_selected_brand_id_int_succeeds(self, client):
+        mgr_h, brand_id = self._setup(client)
+        with patch(
+            "app.services.visual_compliance_service.VisualComplianceService._get_gemini_client",
+            return_value=(_mock_gemini_success(), None),
+        ):
+            res = client.post(
+                "/api/visual-compliance/analyze",
+                data={"image": _png_file(), "brand_id": brand_id},
+                headers=mgr_h,
+                content_type="multipart/form-data",
+            )
+        assert res.status_code == 201
+        body = res.get_json()
+        assert body["success"] is True
+        assert body["analysis"]["brand_id"] == brand_id
+
+    def test_valid_brand_id_in_query_params_with_multipart_image_succeeds(self, client):
+        mgr_h, brand_id = self._setup(client)
+        with patch(
+            "app.services.visual_compliance_service.VisualComplianceService._get_gemini_client",
+            return_value=(_mock_gemini_success(), None),
+        ):
+            res = client.post(
+                f"/api/visual-compliance/analyze?brand_id={brand_id}",
+                data={"image": _png_file()},
+                headers=mgr_h,
+                content_type="multipart/form-data",
+            )
+        assert res.status_code == 201
+        body = res.get_json()
+        assert body["success"] is True
+        assert body["analysis"]["brand_id"] == brand_id
+
+
 class TestVisualComplianceFileValidation:
     """File type, extension, and size validation tests."""
 

@@ -367,7 +367,8 @@ const VisualComplianceChecker = () => {
   // ── Submit ────────────────────────────────────────────────────────────────
   const handleAnalyze = async (e) => {
     e.preventDefault();
-    if (!selectedBrandId) {
+    const brandIdToSubmit = selectedBrandId ? String(selectedBrandId).trim() : '';
+    if (!brandIdToSubmit || brandIdToSubmit === 'undefined' || brandIdToSubmit === 'null') {
       setError('Please select a brand.');
       return;
     }
@@ -381,7 +382,7 @@ const VisualComplianceChecker = () => {
     setAnalysis(null);
 
     const formData = new FormData();
-    formData.append('brand_id', selectedBrandId);
+    formData.append('brand_id', brandIdToSubmit);
     formData.append('image', imageFile);
 
     try {
