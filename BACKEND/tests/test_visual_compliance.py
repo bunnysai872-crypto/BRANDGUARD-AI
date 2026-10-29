@@ -581,6 +581,40 @@ class TestVisualComplianceGeminiErrors:
             )
         assert res.status_code == 429
 
+    def test_invalid_api_key_returns_503_not_401(self, client):
+        """
+        Regression: invalid Gemini API key must return 503 (Service Unavailable),
+        NOT 401 (Unauthorized). A 401 here would cause the Axios response interceptor
+        in the frontend to clear the JWT and redirect the user to the login page,
+        masking the real problem (bad AI provider credentials).
+        """
+        mgr_h, brand_id = self._setup_brand(client, "5")
+
+        def raise_invalid_key(*args, **kwargs):
+            raise Exception("API_KEY_INVALID: provided key is not valid")
+
+        mock_client = MagicMock()
+        mock_client.models.generate_content.side_effect = raise_invalid_key
+
+        with patch(
+            "app.services.visual_compliance_service.VisualComplianceService._get_gemini_client",
+            return_value=(mock_client, None),
+        ):
+            res = client.post(
+                "/api/visual-compliance/analyze",
+                data={"image": _png_file(), "brand_id": str(brand_id)},
+                headers=mgr_h,
+                content_type="multipart/form-data",
+            )
+        # Must NOT be 401 — that would trigger the Axios login redirect.
+        assert res.status_code == 503, (
+            f"Expected 503 for invalid Gemini API key, got {res.status_code}. "
+            "A 401 here causes Axios to redirect to /login instead of showing an error."
+        )
+        body = res.get_json()
+        assert body["success"] is False
+        assert "Gemini API key is invalid" in body["error"]
+
 
 class TestVisualComplianceMissingGuidelines:
     """Test behaviour when a brand has no guidelines."""

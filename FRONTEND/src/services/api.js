@@ -37,13 +37,33 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle unauthenticated 401 errors
+// Response interceptor to handle unauthenticated 401 errors.
+// Only redirect to /login for genuine JWT authentication failures.
+// Application-level errors (e.g. AI provider key misconfiguration) that
+// previously returned 401 now return 503, but we guard against any future
+// regression by checking the error message before redirecting.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Auto logout on token expiration or invalid token
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+      const errMsg = (error.response.data?.error || '').toLowerCase();
+      // Redirect only when the server signals a genuine token/auth failure.
+      // API-provider errors (Gemini key invalid, quota, etc.) must NOT
+      // force a logout — they should surface as an error to the user.
+      const isAuthFailure =
+        errMsg === '' ||          // no body → treat as auth failure (safe default)
+        errMsg.includes('token') ||
+        errMsg.includes('authorization') ||
+        errMsg.includes('log in') ||
+        errMsg.includes('missing') ||
+        errMsg.includes('invalid token') ||
+        errMsg.includes('expired') ||
+        errMsg.includes('unauthorized');
+      if (
+        isAuthFailure &&
+        window.location.pathname !== '/login' &&
+        window.location.pathname !== '/register'
+      ) {
         localStorage.removeItem('brandguard_token');
         localStorage.removeItem('brandguard_user');
         window.location.href = '/login?expired=true';

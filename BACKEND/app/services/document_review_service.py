@@ -559,7 +559,7 @@ Return ONLY valid JSON matching this exact schema. Do NOT include markdown fence
         except Exception as e:
             err_msg = str(e)
             if "API_KEY_INVALID" in err_msg or "invalid api key" in err_msg.lower():
-                return None, "Gemini API key is invalid.", 401
+                return None, "Gemini API key is invalid.", 503
             if "RESOURCE_EXHAUSTED" in err_msg or "quota" in err_msg.lower():
                 return None, "Gemini API rate limit exceeded. Please try again shortly.", 429
             if "timeout" in err_msg.lower():
